@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchInput = document.getElementById("activity-search");
   const searchButton = document.getElementById("search-button");
   const categoryFilters = document.querySelectorAll(".category-filter");
+  const difficultyFilters = document.querySelectorAll(".difficulty-filter");
   const dayFilters = document.querySelectorAll(".day-filter");
   const timeFilters = document.querySelectorAll(".time-filter");
 
@@ -56,6 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // State for activities and filters
   let allActivities = {};
   let currentFilter = "all";
+  let currentDifficulty = "all";
   let searchQuery = "";
   let currentDay = "";
   let currentTimeRange = "";
@@ -446,6 +448,18 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      // Activities without a difficulty are available at every level.
+      if (currentDifficulty === "all") {
+        if (details.difficulty) {
+          return;
+        }
+      } else if (
+        details.difficulty &&
+        details.difficulty.toLowerCase() !== currentDifficulty
+      ) {
+        return;
+      }
+
       // Apply weekend filter if selected
       if (currentTimeRange === "weekend" && details.schedule_details) {
         const activityDays = details.schedule_details.days;
@@ -608,7 +622,86 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    activityCard.appendChild(createShareButtons(name, formattedSchedule));
+
     activitiesList.appendChild(activityCard);
+  }
+
+  // Function to create social sharing buttons for an activity
+  function createShareButtons(name, schedule) {
+    const pageUrl = window.location.origin + window.location.pathname;
+    const shareText = `Check out "${name}" at Mergington High School! Schedule: ${schedule}`;
+    const encodedUrl = encodeURIComponent(pageUrl);
+    const encodedText = encodeURIComponent(shareText);
+
+    const shareOptions = [
+      {
+        label: "Facebook",
+        icon: "f",
+        className: "share-facebook",
+        url: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      },
+      {
+        label: "X (Twitter)",
+        icon: "𝕏",
+        className: "share-x",
+        url: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+      },
+      {
+        label: "WhatsApp",
+        icon: "💬",
+        className: "share-whatsapp",
+        url: `https://wa.me/?text=${encodeURIComponent(shareText + " " + pageUrl)}`,
+      },
+      {
+        label: "Email",
+        icon: "✉",
+        className: "share-email",
+        url: `mailto:?subject=${encodeURIComponent(
+          "Join me at " + name
+        )}&body=${encodeURIComponent(shareText + "\n\n" + pageUrl)}`,
+      },
+    ];
+
+    const container = document.createElement("div");
+    container.className = "share-buttons";
+
+    const title = document.createElement("span");
+    title.className = "share-title";
+    title.textContent = "Share:";
+    container.appendChild(title);
+
+    shareOptions.forEach((option) => {
+      const link = document.createElement("a");
+      link.className = `share-button ${option.className}`;
+      link.href = option.url;
+      link.textContent = option.icon;
+      link.title = `Share on ${option.label}`;
+      link.setAttribute("aria-label", `Share ${name} on ${option.label}`);
+      if (!option.url.startsWith("mailto:")) {
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+      }
+      container.appendChild(link);
+    });
+
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.className = "share-button share-copy";
+    copyButton.textContent = "🔗";
+    copyButton.title = "Copy link";
+    copyButton.setAttribute("aria-label", `Copy link to share ${name}`);
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(`${shareText} ${pageUrl}`);
+        showMessage("Link copied! Paste it to share with friends.", "success");
+      } catch (error) {
+        showMessage("Could not copy the link. Please copy it from the address bar.", "error");
+      }
+    });
+    container.appendChild(copyButton);
+
+    return container;
   }
 
   // Event listeners for search and filter
@@ -632,6 +725,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Update current filter and display filtered activities
       currentFilter = button.dataset.category;
+      displayFilteredActivities();
+    });
+  });
+
+  difficultyFilters.forEach((button) => {
+    button.addEventListener("click", () => {
+      difficultyFilters.forEach((btn) => btn.classList.remove("active"));
+      button.classList.add("active");
+      currentDifficulty = button.dataset.difficulty;
       displayFilteredActivities();
     });
   });
