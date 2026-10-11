@@ -7,6 +7,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const activityInput = document.getElementById("activity");
   const closeRegistrationModal = document.querySelector(".close-modal");
+  const themeToggle = document.getElementById("theme-toggle");
+  const themeToggleLabel = document.getElementById("theme-toggle-label");
+
+  function setTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    themeToggle.setAttribute("aria-pressed", theme === "dark");
+    themeToggle.setAttribute(
+      "aria-label",
+      `Switch to ${theme === "dark" ? "light" : "dark"} mode`,
+    );
+    themeToggleLabel.textContent = theme === "dark" ? "Light mode" : "Dark mode";
+  }
+
+  setTheme(localStorage.getItem("theme") === "dark" ? "dark" : "light");
+  themeToggle.addEventListener("click", () => {
+    const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    setTheme(theme);
+    localStorage.setItem("theme", theme);
+  });
 
   // Search and filter elements
   const searchInput = document.getElementById("activity-search");
